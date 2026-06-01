@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Briefcase, ArrowRight } from 'lucide-react';
 import axios from 'axios'; 
-import toast from 'react-hot-toast'; // FIX: Imported toast
+import toast from 'react-hot-toast'; 
 
 export default function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({ fullName: '', companyName: '', email: '', password: '' });
@@ -11,15 +11,16 @@ export default function Register({ onSwitchToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loadingId = toast.loading("Creating your account..."); // Shows loading spinner
+    const loadingId = toast.loading("Creating your account..."); 
     try {
-      await axios.post('http://localhost:8082/api/auth/register', formData);
+      // FIX: Changed localhost to Render Live URL
+      await axios.post('https://huepro-workspace.onrender.com/api/auth/register', formData);
       toast.dismiss(loadingId);
-      toast.success("Account Created Successfully! Please login now."); // Premium Success Toast
+      toast.success("Account Created Successfully! Please login now."); 
       onSwitchToLogin(); 
     } catch (err) {
       toast.dismiss(loadingId);
-      toast.error(err.response?.data || "Registration failed. Email might exist."); // Premium Error Toast
+      toast.error(err.response?.data || "Registration failed. Email might exist."); 
     }
   };
 

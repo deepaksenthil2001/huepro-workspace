@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import axios from 'axios';
-import toast from 'react-hot-toast'; // FIX: Imported toast
+import toast from 'react-hot-toast'; 
 
 export default function Login({ onLogin, onSwitchToRegister }) {
   const [email, setEmail] = useState('');
@@ -12,18 +12,19 @@ export default function Login({ onLogin, onSwitchToRegister }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loadingId = toast.loading("Verifying credentials..."); // Shows loading spinner
+    const loadingId = toast.loading("Verifying credentials..."); 
     try {
-      const response = await axios.post('http://localhost:8082/api/auth/login', { 
+      // FIX: Changed localhost to Render Live URL
+      const response = await axios.post('https://huepro-workspace.onrender.com/api/auth/login', { 
         email: email, 
         password: password 
       });
       toast.dismiss(loadingId);
-      toast.success("Login Successful! Welcome back ✨"); // Premium Success Toast
+      toast.success("Login Successful! Welcome back ✨"); 
       onLogin(response.data); 
     } catch (err) {
       toast.dismiss(loadingId);
-      toast.error(err.response?.data || "Invalid email or password!"); // Premium Error Toast
+      toast.error(err.response?.data || "Invalid email or password!"); 
     }
   };
 
