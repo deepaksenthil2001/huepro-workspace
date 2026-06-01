@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8082/api/auth';
+const API_URL = 'https://huepro-workspace.onrender.com/api/auth';
 
-export const registerUser = (data) => axios.post(`${API_URL}/register`, data);
-export const loginUser = (data) => axios.post(`${API_URL}/login`, data);
+export const registerContractor = (userData) => {
+    return axios.post(`${API_URL}/register`, userData);
+};
+
+export const loginContractor = (loginData) => {
+    return axios.post(`${API_URL}/login`, loginData);
+};
+
+export const updateContractor = (id, userData) => {
+    return axios.put(`${API_URL}/update/${id}`, userData);
+};

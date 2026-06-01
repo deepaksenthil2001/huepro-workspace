@@ -1,8 +1,20 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8082/api/workers'; 
+const API_URL = 'https://huepro-workspace.onrender.com/api/workers';
 
-export const getWorkers = () => axios.get(API_URL);
-export const createWorker = (data) => axios.post(API_URL, data);
-export const updateWorker = (id, data) => axios.put(`${API_URL}/${id}`, data);
-export const deleteWorker = (id) => axios.delete(`${API_URL}/${id}`);
+export const getWorkers = (contractorId) => {
+    return axios.get(`${API_URL}/contractor/${contractorId}`);
+};
+
+export const addWorker = (workerData) => {
+    return axios.post(API_URL, workerData);
+};
+
+// FIX: Added update functionality for existing workers
+export const updateWorker = (id, workerData) => {
+    return axios.put(`${API_URL}/${id}`, workerData);
+};
+
+export const deleteWorker = (id) => {
+    return axios.delete(`${API_URL}/${id}`);
+};

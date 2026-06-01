@@ -1,16 +1,19 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8081/api/projects';
+const API_URL = 'https://huepro-workspace.onrender.com/api/projects';
 
-// Exporting both names so it perfectly matches with both App.jsx and Projects.jsx!
-export const getProjects = () => axios.get(API_URL);
-export const fetchAllProjectsApi = () => axios.get(API_URL);
+export const getProjects = (contractorId) => {
+    return axios.get(`${API_URL}/contractor/${contractorId}`);
+};
 
-export const createProject = (data) => axios.post(API_URL, data);
-export const createProjectApi = (data) => axios.post(API_URL, data);
+export const createProject = (projectData) => {
+    return axios.post(API_URL, projectData);
+};
 
-export const updateProject = (id, data) => axios.put(`${API_URL}/${id}`, data);
-export const updateProjectApi = (id, data) => axios.put(`${API_URL}/${id}`, data);
+export const updateProject = (id, projectData) => {
+    return axios.put(`${API_URL}/${id}`, projectData);
+};
 
-export const deleteProject = (id) => axios.delete(`${API_URL}/${id}`);
-export const deleteProjectApi = (id) => axios.delete(`${API_URL}/${id}`);
+export const deleteProject = (id) => {
+    return axios.delete(`${API_URL}/${id}`);
+};

@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, X, User, Phone, IndianRupee } from 'lucide-react';
-import { getWorkers, createWorker, updateWorker, deleteWorker } from '../../api/workerApi';
+import { Plus, Phone, IndianRupee, X, Trash2, UserCircle2 } from 'lucide-react';
+import { getWorkers, addWorker, updateWorker, deleteWorker } from '../../api/workerApi';
 
-export default function Workers() {
+export default function Workers({ user }) {
   const [workers, setWorkers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
-  const [formData, setFormData] = useState({ name: '', role: 'Painter', phone: '', wage: '', status: 'Active' });
+  
+  const [formData, setFormData] = useState({ 
+    name: '', role: '', phone: '', dailyWage: '', status: 'Active' 
+  });
 
   const premiumGradient = "linear-gradient(135deg, #FF0080 0%, #FF8C00 50%, #40E0D0 100%)";
 
   useEffect(() => {
-    fetchWorkers();
-  }, []);
+    if(user) fetchWorkers();
+  }, [user]);
 
   const fetchWorkers = async () => {
     try {
-      const response = await getWorkers();
+      const response = await getWorkers(user.id);
       setWorkers(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -30,10 +33,10 @@ export default function Workers() {
   const openModal = (worker = null) => {
     if (worker) {
       setEditingWorker(worker);
-      setFormData(worker);
+      setFormData(worker); // Pre-fill data for editing
     } else {
       setEditingWorker(null);
-      setFormData({ name: '', role: 'Painter', phone: '', wage: '', status: 'Active' });
+      setFormData({ name: '', role: '', phone: '', dailyWage: '', status: 'Active' });
     }
     setIsModalOpen(true);
   };
@@ -41,10 +44,12 @@ export default function Workers() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData, contractorId: user.id };
+
       if (editingWorker) {
-        await updateWorker(editingWorker.id, formData);
+        await updateWorker(editingWorker.id, payload);
       } else {
-        await createWorker(formData);
+        await addWorker(payload);
       }
       fetchWorkers();
       setIsModalOpen(false);
@@ -58,121 +63,114 @@ export default function Workers() {
       try {
         await deleteWorker(id);
         fetchWorkers();
+        setIsModalOpen(false);
       } catch (error) {
         console.error("Error deleting worker:", error);
       }
     }
   };
 
+  // Extract first letter for dynamic avatar
+  const getInitial = (name) => name ? name.charAt(0).toUpperCase() : 'W';
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white shadow-xl">
         <div>
           <h2 className="text-3xl font-extrabold text-neutral-900 tracking-tight">Crew Management</h2>
-          <p className="text-neutral-500 mt-1.5 font-medium">Manage your painters, supervisors, and their daily wages.</p>
+          <p className="text-neutral-500 mt-1.5 font-medium">Manage painters, supervisors, and their schedules.</p>
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input 
-              type="text" 
-              placeholder="Search crew..." 
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-full pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
-          </div>
-          <motion.button 
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white shadow-lg transition-all whitespace-nowrap"
-            style={{ background: premiumGradient }}
-          >
-            <Plus className="w-5 h-5" /> Add Worker
-          </motion.button>
-        </div>
+        <motion.button 
+          whileHover={{ scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }} 
+          onClick={() => openModal()} 
+          className="flex items-center gap-2 px-6 py-3.5 rounded-full font-bold text-white shadow-[0_8px_16px_rgba(255,140,0,0.2)] transition-all whitespace-nowrap"
+          style={{ background: premiumGradient }}
+        >
+          <Plus className="w-5 h-5" /> Add Worker
+        </motion.button>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-neutral-100 overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/50">
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Worker Info</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Contact</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Daily Wage</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Status</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {isLoading ? (
-                <tr><td colSpan="5" className="p-10 text-center text-neutral-500 font-medium">Loading crew data...</td></tr>
-              ) : workers.length === 0 ? (
-                <tr><td colSpan="5" className="p-10 text-center text-neutral-500 font-medium">No workers found. Add your crew members!</td></tr>
-              ) : (
-                workers.map((worker) => (
-                  <motion.tr key={worker.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-neutral-50/80 transition-colors group">
-                    <td className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-neutral-100 rounded-2xl text-neutral-600 border border-neutral-200">
-                          <User className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-neutral-900 font-bold text-base">{worker.name}</h4>
-                          <span className="text-xs font-medium text-neutral-500">{worker.role}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex items-center gap-2 text-sm font-medium text-neutral-600">
-                        <Phone className="w-4 h-4 text-neutral-400" />
-                        {worker.phone}
-                      </div>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex items-center gap-1 text-sm font-bold text-neutral-800">
-                        <IndianRupee className="w-4 h-4 text-neutral-500" />
-                        {worker.wage}
-                      </div>
-                    </td>
-                    <td className="p-6">
-                      <span className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide border ${
-                        worker.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'
-                      }`}>
-                        {worker.status}
-                      </span>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(worker)} className="p-2.5 bg-white hover:bg-neutral-100 rounded-xl text-neutral-500 hover:text-indigo-600 transition-colors border border-neutral-200 shadow-sm">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(worker.id)} className="p-2.5 bg-white hover:bg-red-50 rounded-xl text-neutral-500 hover:text-red-500 transition-colors border border-neutral-200 shadow-sm">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Workers Grid */}
+      {isLoading ? (
+        <div className="text-center p-10 text-neutral-500 font-bold">Loading crew data...</div>
+      ) : workers.length === 0 ? (
+        <div className="text-center p-10 text-neutral-500 font-bold bg-white/50 rounded-[2rem] border border-white">No workers found. Add your first crew member!</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {workers.map((worker) => (
+            <motion.div 
+              key={worker.id}
+              whileHover={{ y: -4 }}
+              onClick={() => openModal(worker)} // Makes the entire card clickable
+              className="bg-white/80 backdrop-blur-xl p-6 rounded-[2rem] border border-neutral-100 shadow-lg hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden"
+            >
+              {/* Card Background Glow */}
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#40E0D0]/10 rounded-full blur-2xl group-hover:bg-[#40E0D0]/20 transition-colors" />
 
+              <div className="flex items-start gap-4 mb-6 relative z-10">
+                {/* Dynamic Avatar instead of Static DP */}
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-md" style={{ background: premiumGradient }}>
+                  {getInitial(worker.name)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-neutral-900">{worker.name}</h3>
+                  <p className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md inline-block mt-1">
+                    {worker.role || 'Worker'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 relative z-10">
+                <div className="flex items-center gap-3 text-sm font-semibold text-neutral-600">
+                  <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  {worker.phone || 'N/A'}
+                </div>
+                <div className="flex items-center gap-3 text-sm font-semibold text-neutral-600">
+                  <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400">
+                    <IndianRupee className="w-4 h-4" />
+                  </div>
+                  {worker.dailyWage || '0'} <span className="text-xs text-neutral-400 font-medium">/ day</span>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-neutral-100 flex justify-between items-center relative z-10">
+                <span className={`px-4 py-1.5 rounded-xl text-xs font-black tracking-wide ${
+                  worker.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                }`}>
+                  {worker.status}
+                </span>
+                <span className="text-xs font-bold text-neutral-400 group-hover:text-indigo-500 transition-colors">
+                  Tap to Edit &rarr;
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Add / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] relative overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="bg-white/95 backdrop-blur-2xl rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl relative border border-white"
             >
-              <div className="absolute top-0 left-0 w-full h-1.5" style={{ background: premiumGradient }} />
-
-              <div className="flex justify-between items-center mb-8 mt-2">
-                <div>
-                  <h3 className="text-2xl font-extrabold text-neutral-900">{editingWorker ? 'Update Worker' : 'Add New Worker'}</h3>
-                  <p className="text-neutral-500 text-sm mt-1 font-medium">Enter details for the crew member.</p>
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                    <UserCircle2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-black text-neutral-900">
+                    {editingWorker ? 'Update Details' : 'New Crew Member'}
+                  </h3>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors">
                   <X className="w-5 h-5" />
@@ -180,42 +178,51 @@ export default function Workers() {
               </div>
 
               <form onSubmit={handleSave} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Full Name</label>
-                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium" placeholder="e.g. Ramesh Kumar" />
+                <div>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                  <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 font-bold text-neutral-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="e.g. Murali" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Role</label>
+  <select required value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 font-bold text-neutral-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer">
+    <option value="" disabled>Select a role...</option>
+    <option value="Helper">Helper</option>
+    <option value="Painter">Painter</option>
+    <option value="Senior Painter">Senior Painter</option>
+    <option value="Supervisor">Supervisor</option>
+  </select>
+</div>
+                  <div>
+                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Daily Wage (₹)</label>
+                    <input required type="number" value={formData.dailyWage} onChange={(e) => setFormData({...formData, dailyWage: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 font-bold text-neutral-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="0" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Phone</label>
+                    <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 font-bold text-neutral-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="10-digit number" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Role</label>
-                    <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium appearance-none">
-                      <option>Painter</option>
-                      <option>Senior Painter</option>
-                      <option>Site Supervisor</option>
-                      <option>Helper</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Phone Number</label>
-                    <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium" placeholder="+91 00000 00000" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Daily Wage (₹)</label>
-                    <input required type="number" value={formData.wage} onChange={(e) => setFormData({...formData, wage: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium" placeholder="e.g. 850" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium appearance-none">
+                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Status</label>
+                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 font-bold text-neutral-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
                       <option>Active</option>
                       <option>On Leave</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-10 pt-6 border-t border-neutral-100">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/3 py-4 rounded-2xl border border-neutral-200 text-neutral-600 font-bold hover:bg-neutral-50 transition-colors">Cancel</button>
-                  <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} type="submit" className="w-2/3 py-4 rounded-2xl text-white font-bold shadow-lg" style={{ background: premiumGradient }}>
+                <div className="flex gap-4 mt-8 pt-6 border-t border-neutral-100">
+                  {editingWorker && (
+                    <button type="button" onClick={() => handleDelete(editingWorker.id)} className="w-14 h-14 flex items-center justify-center rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shrink-0">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button type="submit" className="flex-1 py-4 rounded-2xl text-white font-black shadow-[0_8px_16px_rgba(255,140,0,0.2)] hover:opacity-90 transition-opacity flex justify-center items-center gap-2" style={{ background: premiumGradient }}>
                     {editingWorker ? 'Save Changes' : 'Add Worker'}
-                  </motion.button>
+                  </button>
                 </div>
               </form>
             </motion.div>

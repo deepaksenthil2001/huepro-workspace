@@ -1,31 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, X, MoreHorizontal, Calendar, PaintRoller } from 'lucide-react';
-import axios from 'axios'; // Import Axios for API calls
+import { Plus, Search, Edit2, Trash2, X, MoreHorizontal, Calendar, PaintRoller, GripVertical, IndianRupee } from 'lucide-react';
+import axios from 'axios';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-export default function Projects() {
-  // State for Projects Data
+// FIX 1: Added user prop
+export default function Projects({ user }) {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // States for Modal and Form
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-  const [formData, setFormData] = useState({ name: '', client: '', status: 'Pending', budget: '', progress: 0, date: '' });
+  const [formData, setFormData] = useState({ name: '', client: '', status: 'Pending', budget: '', progress: 0, date: '', description: '', priority: 'Medium' });
 
-  // API Base URL (Spring Boot Backend)
   const API_URL = 'http://localhost:8082/api/projects';
 
-  const premiumGradient = "linear-gradient(135deg, #FF0080 0%, #FF8C00 50%, #40E0D0 100%)";
-
-  // 1. READ: Fetch all projects from Database on component load
+  // FIX 2: Added user dependency
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (user) {
+      fetchProjects();
+    }
+  }, [user]);
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get(API_URL);
+      // FIX 3: Fetch only this user's projects
+      const response = await axios.get(`${API_URL}/contractor/${user.id}`);
       setProjects(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -40,205 +39,199 @@ export default function Projects() {
       setFormData(project);
     } else {
       setEditingProject(null);
-      setFormData({ name: '', client: '', status: 'Pending', budget: '', progress: 0, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) });
+      setFormData({ name: '', client: '', status: 'Pending', budget: '', progress: 0, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), description: '', priority: 'Medium' });
     }
     setIsModalOpen(true);
   };
 
-  // 2. CREATE & UPDATE: Save data to Database
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      // FIX 4: Attach contractorId to the data being saved
+      const payload = { ...formData, contractorId: user.id };
+
       if (editingProject) {
-        // UPDATE Existing Project
-        await axios.put(`${API_URL}/${editingProject.id}`, formData);
+        await axios.put(`${API_URL}/${editingProject.id}`, payload);
       } else {
-        // CREATE New Project
-        await axios.post(API_URL, formData);
+        await axios.post(API_URL, payload);
       }
-      fetchProjects(); // Refresh the table after saving
+      fetchProjects();
       setIsModalOpen(false);
     } catch (error) {
       console.error("Error saving project:", error);
-      alert("Failed to save project. Please ensure Backend is running.");
+      alert("Failed to save project. Ensure Backend is running.");
     }
   };
 
-  // 3. DELETE: Remove data from Database
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this project?")) {
       try {
         await axios.delete(`${API_URL}/${id}`);
-        fetchProjects(); // Refresh the table after deleting
+        fetchProjects();
       } catch (error) {
         console.error("Error deleting project:", error);
       }
     }
   };
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 relative">
-      
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-200/40 rounded-full blur-[100px] -z-10 pointer-events-none mix-blend-multiply" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-200/30 rounded-full blur-[100px] -z-10 pointer-events-none mix-blend-multiply" />
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+    const { source, destination, draggableId } = result;
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-xl p-8 rounded-[2rem] border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    if (source.droppableId !== destination.droppableId) {
+      const draggedProject = projects.find(p => p.id.toString() === draggableId);
+      const newStatus = destination.droppableId;
+      
+      setProjects(prev => prev.map(p => p.id.toString() === draggableId ? { ...p, status: newStatus } : p));
+
+      try {
+        // FIX 5: Ensure contractorId is maintained during drag & drop update
+        const payload = { ...draggedProject, status: newStatus, contractorId: user.id };
+        await axios.put(`${API_URL}/${draggableId}`, payload);
+      } catch (error) {
+        console.error("Failed to update status", error);
+        fetchProjects(); 
+      }
+    }
+  };
+
+  const columns = {
+    'Pending': { title: 'To Do (Pending)', color: 'bg-amber-500/10 text-amber-700 border-amber-200' },
+    'In Progress': { title: 'In Progress', color: 'bg-blue-500/10 text-blue-700 border-blue-200' },
+    'Completed': { title: 'Completed', color: 'bg-emerald-500/10 text-emerald-700 border-emerald-200' }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 relative h-full flex flex-col">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glass p-6 rounded-[2rem]">
         <div>
           <h2 className="text-3xl font-extrabold text-neutral-900 tracking-tight">Active Sites</h2>
-          <p className="text-neutral-500 mt-1.5 font-medium">Manage your painting operations and site progress.</p>
+          <p className="text-neutral-500 mt-1 font-medium">Drag and drop projects to update their status.</p>
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input 
-              type="text" 
-              placeholder="Search sites..." 
-              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-            />
-          </div>
-          <motion.button 
-            whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(255, 0, 128, 0.2)" }} whileTap={{ scale: 0.98 }}
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white shadow-lg transition-all whitespace-nowrap"
-            style={{ background: premiumGradient }}
-          >
-            <Plus className="w-5 h-5" /> New Site
-          </motion.button>
-        </div>
+        <motion.button 
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          onClick={() => openModal()}
+          className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all whitespace-nowrap bg-gradient-to-r from-[#FF0080] to-[#FF8C00]"
+        >
+          <Plus className="w-5 h-5" /> New Site
+        </motion.button>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-neutral-100 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/50">
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Project Details</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Budget</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Status</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider">Progress</th>
-                <th className="p-6 text-xs font-bold text-neutral-400 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan="5" className="p-10 text-center text-neutral-500 font-medium">Loading projects from Database...</td>
-                </tr>
-              ) : projects.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="p-10 text-center text-neutral-500 font-medium">No projects found. Add a new site!</td>
-                </tr>
-              ) : (
-                projects.map((project) => (
-                  <motion.tr key={project.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hover:bg-neutral-50/80 transition-colors group">
-                    <td className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600 border border-indigo-100/50">
-                          <PaintRoller className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-neutral-900 font-bold text-base">{project.name}</h4>
-                          <div className="flex items-center gap-2 mt-1 text-xs font-medium text-neutral-500">
-                            <span>{project.client}</span>
-                            <span className="w-1 h-1 rounded-full bg-neutral-300"></span>
-                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {project.date}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-6 text-neutral-700 font-semibold">{project.budget}</td>
-                    <td className="p-6">
-                      <span className={`px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide border ${
-                        project.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
-                        project.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
-                        'bg-amber-50 text-amber-600 border-amber-200'
-                      }`}>
-                        {project.status}
-                      </span>
-                    </td>
-                    <td className="p-6 min-w-[200px]">
-                      <div className="flex justify-between text-xs font-bold mb-2">
-                        <span className="text-neutral-500">Completion</span>
-                        <span className="text-neutral-900">{project.progress}%</span>
-                      </div>
-                      <div className="w-full bg-neutral-100 rounded-full h-2.5 overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }} animate={{ width: `${project.progress}%` }} 
-                          className="h-full rounded-full"
-                          style={{ background: premiumGradient }}
-                        />
-                      </div>
-                    </td>
-                    <td className="p-6">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(project)} className="p-2.5 bg-white hover:bg-neutral-100 rounded-xl text-neutral-500 hover:text-indigo-600 transition-colors border border-neutral-200 shadow-sm">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(project.id)} className="p-2.5 bg-white hover:bg-red-50 rounded-xl text-neutral-500 hover:text-red-500 transition-colors border border-neutral-200 shadow-sm">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center h-64 glass rounded-[2rem]">
+          <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
         </div>
-      </div>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-[500px]">
+            {Object.entries(columns).map(([status, config]) => (
+              <div key={status} className="glass rounded-[2rem] p-5 flex flex-col h-full bg-white/40">
+                <div className={`px-4 py-2 rounded-xl border font-bold text-sm mb-4 inline-block w-max ${config.color}`}>
+                  {config.title} <span className="ml-2 opacity-50">{projects.filter(p => p.status === status).length}</span>
+                </div>
+                
+                <Droppable droppableId={status}>
+                  {(provided, snapshot) => (
+                    <div 
+                      ref={provided.innerRef} 
+                      {...provided.droppableProps}
+                      className={`flex-1 space-y-4 rounded-xl transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50' : ''}`}
+                    >
+                      {projects.filter(p => p.status === status).map((project, index) => (
+                        <Draggable key={project.id} draggableId={project.id.toString()} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 transition-all ${snapshot.isDragging ? 'shadow-xl scale-105 rotate-2' : 'hover:shadow-md'}`}
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex gap-2 items-center">
+                                  <div {...provided.dragHandleProps} className="text-neutral-300 hover:text-neutral-500 cursor-grab">
+                                    <GripVertical className="w-4 h-4" />
+                                  </div>
+                                  <h4 className="font-extrabold text-neutral-900">{project.name}</h4>
+                                </div>
+                                <div className="flex gap-1">
+                                  <button onClick={() => openModal(project)} className="p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDelete(project.id)} className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                              </div>
+                              
+                              <p className="text-sm font-medium text-neutral-500 mb-4">{project.client}</p>
+                              
+                              <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-100">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-md">
+                                  <IndianRupee className="w-3.5 h-3.5" /> {project.budget}
+                                </div>
+                                <div className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                                  {project.progress}% Done
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      )}
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-1.5" style={{ background: premiumGradient }} />
-
-              <div className="flex justify-between items-center mb-8 mt-2">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 w-full max-w-xl shadow-2xl relative border border-white">
+              <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h3 className="text-2xl font-extrabold text-neutral-900">{editingProject ? 'Update Project' : 'New Painting Site'}</h3>
-                  <p className="text-neutral-500 text-sm mt-1 font-medium">Fill in the details to manage this site.</p>
+                  <h3 className="text-2xl font-extrabold text-neutral-900">{editingProject ? 'Update Site Details' : 'Create New Site'}</h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full transition-colors"><X className="w-5 h-5" /></button>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Project Name</label>
-                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm" placeholder="e.g. Skyline Apartments Exterior" />
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">PROJECT NAME</label>
+                    <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Client Name</label>
-                    <input required type="text" value={formData.client} onChange={(e) => setFormData({...formData, client: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm" placeholder="Client name" />
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">CLIENT NAME</label>
+                    <input required type="text" value={formData.client} onChange={(e) => setFormData({...formData, client: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Budget (₹)</label>
-                    <input required type="text" value={formData.budget} onChange={(e) => setFormData({...formData, budget: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm" placeholder="e.g. ₹5,00,000" />
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">BUDGET</label>
+                    <input required type="text" value={formData.budget} onChange={(e) => setFormData({...formData, budget: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-3.5 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm appearance-none">
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">STATUS</label>
+                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
                       <option>Pending</option>
                       <option>In Progress</option>
                       <option>Completed</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-neutral-500 mb-1.5 ml-1 uppercase tracking-wide">Progress: {formData.progress}%</label>
-                    <input type="range" min="0" max="100" value={formData.progress} onChange={(e) => setFormData({...formData, progress: e.target.value})} className="w-full mt-3 accent-indigo-600" />
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">PRIORITY</label>
+                    <select value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
+                      <option>High</option>
+                      <option>Medium</option>
+                      <option>Low</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-neutral-500 mb-1">PROGRESS: {formData.progress}%</label>
+                    <input type="range" min="0" max="100" value={formData.progress} onChange={(e) => setFormData({...formData, progress: e.target.value})} className="w-full mt-2 accent-indigo-600" />
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-10 pt-6 border-t border-neutral-100">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/3 py-4 rounded-2xl border border-neutral-200 text-neutral-600 font-bold hover:bg-neutral-50 transition-colors">Cancel</button>
-                  <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} type="submit" className="w-2/3 py-4 rounded-2xl text-white font-bold shadow-lg" style={{ background: premiumGradient }}>
-                    {editingProject ? 'Save Changes' : 'Create Project'}
-                  </motion.button>
+                <div className="flex gap-4 mt-8 pt-6 border-t border-neutral-100">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/3 py-3.5 rounded-xl border border-neutral-200 text-neutral-600 font-bold hover:bg-neutral-50">Cancel</button>
+                  <button type="submit" className="w-2/3 py-3.5 rounded-xl text-white font-bold bg-gradient-to-r from-[#FF0080] to-[#FF8C00] shadow-lg">Save Project</button>
                 </div>
               </form>
             </motion.div>

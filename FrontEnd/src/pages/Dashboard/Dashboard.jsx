@@ -1,92 +1,196 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { PaintRoller, Droplet, Users, Receipt, Palette, IndianRupee, ArrowUpRight, ChevronRight, Sparkles, Plus, Activity, Paintbrush } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  PaintRoller, 
+  Droplet, 
+  Users, 
+  Receipt, 
+  Palette, 
+  IndianRupee, 
+  ArrowUpRight, 
+  Plus, 
+  Activity,
+  Paintbrush
+} from 'lucide-react';
 
 export default function Dashboard({ stats, liveFeed, setActiveTab }) {
+  // Premium Gradients matching the logo aesthetic
   const premiumGradient = "linear-gradient(135deg, #FF0080 0%, #FF8C00 50%, #40E0D0 100%)";
+  const revenueGradient = "linear-gradient(135deg, #FF8C00 0%, #FF0080 100%)";
 
-  const containerAnim = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.15 } } };
-  const itemAnim = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
+  // Card Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
 
   return (
-    <motion.div variants={containerAnim} initial="hidden" animate="show" className="space-y-8 pb-10">
-      <motion.div variants={itemAnim} className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1 relative overflow-hidden rounded-[2.5rem] p-10 bg-white/70 backdrop-blur-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
-          <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-1/4 -translate-y-1/4"><Palette size={200} /></div>
+    <motion.div 
+      variants={containerVariants} 
+      initial="hidden" 
+      animate="show" 
+      className="space-y-8"
+    >
+      {/* Top Section: Overview & Revenue */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Business Overview Welcome Card */}
+        <motion.div variants={itemVariants} className="col-span-2 bg-white/70 backdrop-blur-3xl p-10 rounded-[2.5rem] border border-white shadow-xl relative overflow-hidden flex flex-col justify-center">
+          <Palette className="absolute -right-10 -bottom-10 w-64 h-64 text-neutral-100 opacity-50 rotate-12" />
           <div className="relative z-10">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-white text-neutral-800 font-extrabold text-[10px] tracking-widest uppercase mb-4 shadow-sm border border-neutral-100">HuePro Workspace</span>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-neutral-900 mb-3">Business <span style={{ background: premiumGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Overview</span></h1>
-            <p className="text-neutral-500 font-medium text-sm md:text-base max-w-lg">Monitor your active paint sites, manage crew attendance, and track inventory in real-time.</p>
+            <p className="text-xs font-extrabold text-neutral-400 uppercase tracking-widest mb-3">HuePro Workspace</p>
+            <h1 className="text-5xl font-black text-neutral-900 tracking-tighter mb-4">
+              Business <span style={{ background: premiumGradient, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Overview</span>
+            </h1>
+            <p className="text-neutral-500 font-medium max-w-md leading-relaxed">
+              Monitor your active paint sites, manage crew attendance, and track inventory in real-time.
+            </p>
           </div>
-        </div>
-        <div className="w-full md:w-80 rounded-[2.5rem] p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-[0_10px_40px_rgba(255,0,128,0.3)] hover:scale-[1.02] transition-transform duration-300" style={{ background: premiumGradient }}>
+        </motion.div>
+
+        {/* Revenue Card (Dynamic) */}
+        <motion.div variants={itemVariants} className="p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-white flex flex-col justify-between" style={{ background: revenueGradient }}>
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
           <div>
-            <p className="text-white/80 text-sm font-bold tracking-wide uppercase mb-1">Total Revenue</p>
-            <h2 className="text-4xl font-extrabold flex items-center gap-1"><IndianRupee className="w-7 h-7 text-white/90" /> {stats.revenue.toLocaleString('en-IN')}</h2>
-            <div className="flex items-center gap-1 text-white/90 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold mt-4 shadow-sm"><ArrowUpRight className="w-4 h-4" /> Live Updates</div>
-          </div>
-          <button onClick={() => setActiveTab('invoices')} className="mt-6 w-full py-3.5 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 transition-all flex items-center justify-center gap-2 text-sm font-bold shadow-lg">View Billings <ChevronRight className="w-4 h-4" /></button>
-        </div>
-      </motion.div>
-
-      <motion.div variants={itemAnim} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { title: 'Active Sites', value: stats.projects, icon: PaintRoller, tab: 'projects', color: 'from-[#FF0080] to-[#FF4D94]' },
-          { title: 'Inventory Stock', value: stats.materials, icon: Droplet, tab: 'materials', color: 'from-[#FF8C00] to-[#FFB04D]' },
-          { title: 'Crew On-Site', value: stats.workers, icon: Users, tab: 'workers', color: 'from-[#40E0D0] to-[#66E8DA]' },
-        ].map((stat, index) => (
-          <motion.button key={index} whileHover={{ y: -6, scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveTab(stat.tab)} className={`text-left relative overflow-hidden bg-gradient-to-br ${stat.color} p-8 rounded-[2.5rem] shadow-lg group`}>
-            <div className="absolute -right-4 -top-4 opacity-20 transform group-hover:scale-125 transition-transform duration-500 text-white"><stat.icon size={120} /></div>
-            <div className="relative z-10 flex justify-between items-start mb-6">
-              <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-sm"><stat.icon className="w-6 h-6" /></div>
-              <ArrowUpRight className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+            <p className="text-xs font-extrabold uppercase tracking-widest text-white/80 mb-2">Total Revenue</p>
+            <h2 className="text-5xl font-black flex items-center gap-2">
+              <IndianRupee className="w-8 h-8" /> 
+              {stats.revenue.toLocaleString('en-IN')}
+            </h2>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md mt-4 text-xs font-bold">
+              <ArrowUpRight className="w-3 h-3" /> Live Updates
             </div>
-            <h3 className="relative z-10 text-5xl font-extrabold text-white tracking-tight">{stat.value.toString().padStart(2, '0')}</h3>
-            <p className="relative z-10 text-sm font-bold text-white/90 uppercase tracking-wider mt-2">{stat.title}</p>
-          </motion.button>
-        ))}
-      </motion.div>
-
-      <motion.div variants={itemAnim} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-3xl rounded-[2.5rem] p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-extrabold text-neutral-900 flex items-center gap-2"><Sparkles className="text-[#FF0080] w-5 h-5" /> Quick Actions</h3>
-            <span className="text-xs font-bold text-[#FF8C00] bg-[#FF8C00]/10 px-4 py-1.5 rounded-full border border-[#FF8C00]/20">CRUD Shortcuts</span>
           </div>
+          <button onClick={() => setActiveTab('invoices')} className="w-full mt-6 py-3.5 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-md transition-colors text-sm font-extrabold flex justify-center items-center gap-2">
+            View Billings <ArrowUpRight className="w-4 h-4" />
+          </button>
+        </motion.div>
+      </div>
+
+      {/* Middle Section: Quick Stats (Dynamic) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Active Sites */}
+        <motion.div variants={itemVariants} className="bg-[#FF0080] p-8 rounded-[2rem] shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <PaintRoller className="absolute -right-4 -top-4 w-32 h-32 text-white/10 group-hover:scale-110 transition-transform duration-500" />
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-6">
+            <PaintRoller className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-5xl font-black text-white mb-1">{String(stats.projects).padStart(2, '0')}</h3>
+          <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest">Active Sites</p>
+        </motion.div>
+
+        {/* Inventory Stock */}
+        <motion.div variants={itemVariants} className="bg-[#FF8C00] p-8 rounded-[2rem] shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <Droplet className="absolute -right-4 -top-4 w-32 h-32 text-white/10 group-hover:scale-110 transition-transform duration-500" />
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-6">
+            <Droplet className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-5xl font-black text-white mb-1">{String(stats.materials).padStart(2, '0')}</h3>
+          <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest">Inventory Stock</p>
+        </motion.div>
+
+        {/* Crew On-Site */}
+        <motion.div variants={itemVariants} className="bg-[#40E0D0] p-8 rounded-[2rem] shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+          <Users className="absolute -right-4 -top-4 w-32 h-32 text-white/10 group-hover:scale-110 transition-transform duration-500" />
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-6">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-5xl font-black text-white mb-1">{String(stats.workers).padStart(2, '0')}</h3>
+          <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest">Crew On-Site</p>
+        </motion.div>
+      </div>
+
+      {/* Bottom Section: Quick Actions & Live Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Quick Actions Shortcuts */}
+        <motion.div variants={itemVariants} className="col-span-2 bg-white/70 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white shadow-xl">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-extrabold text-neutral-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-[#FF0080]" /> Quick Actions
+            </h3>
+            <span className="text-[10px] font-extrabold text-[#FF8C00] bg-[#FF8C00]/10 px-3 py-1.5 rounded-full uppercase tracking-wider">CRUD Shortcuts</span>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { name: 'Start New Project', desc: 'Add client & site details', icon: Plus, tab: 'projects' },
-              { name: 'Add Worker', desc: 'Register new crew member', icon: Users, tab: 'workers' },
-              { name: 'Update Inventory', desc: 'Add paint or tools to stock', icon: Paintbrush, tab: 'materials' },
-              { name: 'Generate Invoice', desc: 'Create bill for client', icon: Receipt, tab: 'invoices' }
-            ].map((action, i) => (
-              <motion.button key={i} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveTab(action.tab)} className="flex items-center gap-4 p-5 rounded-2xl bg-white hover:bg-neutral-50/80 border border-neutral-100 transition-all group text-left shadow-sm">
-                <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-100 text-neutral-500 group-hover:shadow-md transition-all"><action.icon className="w-5 h-5" /></div>
-                <div>
-                  <h4 className="text-sm font-bold text-neutral-900 group-hover:text-[#FF0080] transition-colors">{action.name}</h4>
-                  <p className="text-xs font-medium text-neutral-500 mt-0.5">{action.desc}</p>
+            <button onClick={() => setActiveTab('projects')} className="group flex items-start gap-4 p-5 bg-white/50 hover:bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all text-left">
+              <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:text-[#FF0080] group-hover:bg-[#FF0080]/10 transition-colors">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-900 mb-0.5">Start New Project</p>
+                <p className="text-xs font-medium text-neutral-500">Add client & site details</p>
+              </div>
+            </button>
+            
+            <button onClick={() => setActiveTab('workers')} className="group flex items-start gap-4 p-5 bg-white/50 hover:bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all text-left">
+              <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:text-[#FF8C00] group-hover:bg-[#FF8C00]/10 transition-colors">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-900 mb-0.5">Add Worker</p>
+                <p className="text-xs font-medium text-neutral-500">Register new crew member</p>
+              </div>
+            </button>
+
+            <button onClick={() => setActiveTab('materials')} className="group flex items-start gap-4 p-5 bg-white/50 hover:bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all text-left">
+              <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:text-[#40E0D0] group-hover:bg-[#40E0D0]/10 transition-colors">
+                <Paintbrush className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-900 mb-0.5">Update Inventory</p>
+                <p className="text-xs font-medium text-neutral-500">Add paint or tools to stock</p>
+              </div>
+            </button>
+
+            <button onClick={() => setActiveTab('invoices')} className="group flex items-start gap-4 p-5 bg-white/50 hover:bg-white rounded-2xl border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all text-left">
+              <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:text-[#FF0080] group-hover:bg-[#FF0080]/10 transition-colors">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-900 mb-0.5">Generate Invoice</p>
+                <p className="text-xs font-medium text-neutral-500">Create bill for client</p>
+              </div>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Live Activity Feed */}
+        <motion.div variants={itemVariants} className="bg-white/70 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white shadow-xl h-[350px] overflow-hidden flex flex-col">
+          <h3 className="text-xl font-extrabold text-neutral-900 flex items-center gap-2 mb-6">
+            <Activity className="w-5 h-5 text-[#40E0D0]" /> Live Activity
+          </h3>
+          
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+            {liveFeed.map((item, index) => (
+              <motion.div 
+                key={item.id || index}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-start gap-4"
+              >
+                <div className={`w-9 h-9 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                  <item.icon className="w-4 h-4" />
                 </div>
-              </motion.button>
+                <div className="flex-1 border-b border-neutral-100 pb-4">
+                  <p className="text-sm font-bold text-neutral-900">{item.text}</p>
+                  <p className="text-xs font-medium text-neutral-400">{item.time}</p>
+                </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-
-        <div className="bg-white/70 backdrop-blur-3xl rounded-[2.5rem] p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-8"><Activity className="w-5 h-5 text-[#40E0D0]" /><h3 className="text-xl font-extrabold text-neutral-900">Live Activity</h3></div>
-          <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-neutral-200 before:to-transparent">
-            <AnimatePresence>
-              {liveFeed.map((item, i) => (
-                <motion.div key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 border-white shadow-md shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 ${item.bg} ${item.color}`}><item.icon className="w-4 h-4" /></div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl bg-white/80 border border-neutral-100 shadow-sm hover:shadow-md transition-shadow">
-                    <p className="text-sm font-bold text-neutral-900">{item.text}</p>
-                    <span className="text-xs font-bold text-neutral-400 mt-1 block">{item.time}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+        
+      </div>
     </motion.div>
   );
 }
