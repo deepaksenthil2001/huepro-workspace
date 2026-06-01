@@ -10,7 +10,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 // CORS எரரைத் தடுக்க இது மிகவும் அவசியம்
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class AuthController {
 
     @Autowired
