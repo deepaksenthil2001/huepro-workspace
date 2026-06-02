@@ -7,17 +7,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class CorsConfig {
-
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**") // அனைத்து API-களுக்கும் அனுமதி (Auth, Projects, Materials)
-                        .allowedOrigins("*") // React ஓடும் போர்ட்
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // அனைத்து Methods-கும் அனுமதி
-                        .allowedHeaders("*")
-                        .allowCredentials(true);
+                registry.addMapping("/**") // anaithu API-kalukkum anumadhi
+                        .allowedOrigins("*") // React odum port
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") 
+                        .allowedHeaders("*"); 
+                        // MUKKIYAM: allowCredentials line-ah thookiyachu!
             }
         };
     }
