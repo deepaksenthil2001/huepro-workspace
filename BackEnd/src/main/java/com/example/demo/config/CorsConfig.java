@@ -14,7 +14,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // அனைத்து API-களுக்கும் அனுமதி (Auth, Projects, Materials)
-                        .allowedOrigins("http://localhost:5173") // React ஓடும் போர்ட்
+                        .allowedOrigins("*") // React ஓடும் போர்ட்
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // அனைத்து Methods-கும் அனுமதி
                         .allowedHeaders("*")
                         .allowCredentials(true);
